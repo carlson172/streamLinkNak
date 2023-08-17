@@ -39,6 +39,7 @@ from email.mime.base import MIMEBase
 from mimetypes import guess_type as guess_mime_type
 
 ### Get Config Parameters from config.ini
+
 username = getpass.getuser()
 config = configparser.ConfigParser()
 userDir = ("/home/" + username + "/")
@@ -49,8 +50,8 @@ user = config.get("streamLink", "user")
 host = config.get("streamLink", "host")
 url = config.get("streamLink", "url")
 
-if username == "bash":
-    username = getpass.getuser()
+#if username == "bash":
+#    username = getpass.getuser()
 goSheetCred = ( userDir + config.get("streamLink", "goSheetCred"))
 goMailCred = ( userDir + config.get("streamLink", "goMailCred") )
 
@@ -270,7 +271,7 @@ for x in range(startcol, endcol):
     id = extract.video_id(link_sel_link[x])
     #print( "videoID: " + id )
     
-    storedId = "/usr/bin/ssh -i /home/$USER/.ssh/" + keyRow[x] + " " + user + "@" + host + " nactube_ctl list streams "
+    storedId = "/usr/bin/ssh -i " + userDir + ".ssh/" + keyRow[x] + " " + user + "@" + host + " nactube_ctl list streams "
     try:
         ret = subprocess.check_output(storedId, shell=True).decode('utf-8').strip().split('\n')
     except subprocess.CalledProcessError as err:
@@ -283,9 +284,9 @@ for x in range(startcol, endcol):
         print(" already set")
     else:
     #now construct the shell command
-        ausgang = "ssh -i /home/$USER/.ssh/" + keyRow[x] + " " + user + "@" + host + " nactube_ctl update path " + channelLink[x] + " set stream " + id
+        ausgang = "ssh -i " + userDir + ".ssh/" + keyRow[x] + " " + user + "@" + host + " nactube_ctl update path " + channelLink[x] + " set stream " + id
         #print(ausgang)
-    
+        
         #execute it
         ret = os.system(ausgang)
         #ret = 0
