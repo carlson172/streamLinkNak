@@ -206,7 +206,7 @@ rowNumber=6
 senderTestList = emailFailReceiverString
 emailSubjectString = "streamlink erfolgreich gestartet"
 emailContentString = "Hallo,\nstreamlink wurde erfolgreich gestartet und ist vor dem Datumsvergleich"
-send_message(service, senderTestList, emailSubjectString, emailContentString, [ ])
+#send_message(service, senderTestList, emailSubjectString, emailContentString, [ ])
 
 #now walk over row, pick the first column and compare the date with the selected date
 while search:
