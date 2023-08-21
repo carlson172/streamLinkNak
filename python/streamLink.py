@@ -189,6 +189,7 @@ for x in range(startcol, endcol):
         ret = subprocess.check_output(storedId, shell=True).decode('utf-8').strip().split('\n')
     except subprocess.CalledProcessError as err:
         print(err)
+        ret = "error!"
 
     #print(" return from query: " + ret[0] + "--") 
     #print( "videoID: " + id + "--")
