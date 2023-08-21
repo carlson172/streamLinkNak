@@ -60,89 +60,6 @@ goMailCred = ( userDir + config.get("streamLink", "goMailCred") )
 today = datetime.today().replace(microsecond=0, second=0, minute=0, hour=0)
 print("Today: ", today)
 
-#setup mail access -- start
-
-# Request all access (permission to read/send/receive emails, manage the inbox, and more)
-SCOPES = ['https://mail.google.com/']
-our_email = config.get("streamLink", "senderAddress")
-
-def gmail_authenticate():
-    creds = None
-    # the file token.pickle stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first time
-    if os.path.exists("token.pickle"):
-        with open("token.pickle", "rb") as token:
-            creds = pickle.load(token)
-    # if there are no (valid) credentials availablle, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            try:
-                creds.refresh(Request())
-            except RefreshError:
-                print("Credentials could not be refreshed, possibly the authorization was revoked by the user.")
-                os.unlink(goMailCred)
-                return
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(goMailCred, SCOPES)
-            creds = flow.run_local_server(port=0)
-        # save the credentials for the next run
-        with open("token.pickle", "wb") as token:
-            pickle.dump(creds, token)
-    return build('gmail', 'v1', credentials=creds)
-
-# get the Gmail API service
-service = gmail_authenticate()
-
-# Adds the attachment with the given filename to the given message
-def add_attachment(message, filename):
-    content_type, encoding = guess_mime_type(filename)
-    if content_type is None or encoding is not None:
-        content_type = 'application/octet-stream'
-    main_type, sub_type = content_type.split('/', 1)
-    if main_type == 'text':
-        fp = open(filename, 'rb')
-        msg = MIMEText(fp.read().decode(), _subtype=sub_type)
-        fp.close()
-    elif main_type == 'image':
-        fp = open(filename, 'rb')
-        msg = MIMEImage(fp.read(), _subtype=sub_type)
-        fp.close()
-    elif main_type == 'audio':
-        fp = open(filename, 'rb')
-        msg = MIMEAudio(fp.read(), _subtype=sub_type)
-        fp.close()
-    else:
-        fp = open(filename, 'rb')
-        msg = MIMEBase(main_type, sub_type)
-        msg.set_payload(fp.read())
-        fp.close()
-    filename = os.path.basename(filename)
-    msg.add_header('Content-Disposition', 'attachment', filename=filename)
-    message.attach(msg)
-
-def build_message(destination, obj, body, attachments=[]):
-    if not attachments: # no attachments given
-        message = MIMEText(body)
-        message['to'] = destination
-        message['from'] = our_email
-        message['subject'] = obj
-    else:
-        message = MIMEMultipart()
-        message['to'] = destination
-        message['from'] = our_email
-        message['subject'] = obj
-        message.attach(MIMEText(body))
-        for filename in attachments:
-            add_attachment(message, filename)
-    return {'raw': urlsafe_b64encode(message.as_bytes()).decode()}
-
-def send_message(service, destination, obj, body, attachments=[]):
-    return service.users().messages().send(
-      userId="me",
-      body=build_message(destination, obj, body, attachments)
-    ).execute()
-
-#setup mail access -- end
 
 # connect to google
 with open(goSheetCred) as source:
@@ -183,11 +100,7 @@ for emailCurrRow in range(1, emailReceiverRows):
     if (len(emailRow[emailCurrRow]) != 0):
         emailFailReceiverString = ( emailRow[emailCurrRow] + ", " + emailFailReceiverString)
 
-#print( "EmailRecRows: " + str(emailReceiverRows) )
-#print("EmailReceiver: " + emailReceiverString + "\n")
-
-
-
+     
 #get shell commands for each "slot"
 churchCommunity = wks.get_row(1)
 linkcode = wks.get_row(2) 
@@ -201,12 +114,6 @@ first_column = wks.get_col(1)
 search = True
 #first date afer header range
 rowNumber=6
-
-## testsection send a mail when activated
-senderTestList = emailFailReceiverString
-emailSubjectString = "streamlink erfolgreich gestartet"
-emailContentString = "Hallo,\nstreamlink wurde erfolgreich gestartet und ist vor dem Datumsvergleich"
-#send_message(service, senderTestList, emailSubjectString, emailContentString, [ ])
 
 #now walk over row, pick the first column and compare the date with the selected date
 while search:
@@ -329,6 +236,91 @@ for x in range(startcol, endcol):
             # error, prepare the mail to the fail list to be send
             print("Fehler: " + ausgang)
             failForMail = churchCommunity[x]
+
+
+#setup mail access -- start
+
+# Request all access (permission to read/send/receive emails, manage the inbox, and more)
+SCOPES = ['https://mail.google.com/']
+our_email = config.get("streamLink", "senderAddress")
+
+def gmail_authenticate():
+    creds = None
+    # the file token.pickle stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first time
+    if os.path.exists("token.pickle"):
+        with open("token.pickle", "rb") as token:
+            creds = pickle.load(token)
+    # if there are no (valid) credentials availablle, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            try:
+                creds.refresh(Request())
+            except RefreshError:
+                print("Credentials could not be refreshed, possibly the authorization was revoked by the user.")
+                os.unlink(goMailCred)
+                return
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(goMailCred, SCOPES)
+            creds = flow.run_local_server(port=0)
+        # save the credentials for the next run
+        with open("token.pickle", "wb") as token:
+            pickle.dump(creds, token)
+    return build('gmail', 'v1', credentials=creds)
+
+# get the Gmail API service
+service = gmail_authenticate()
+
+# Adds the attachment with the given filename to the given message
+def add_attachment(message, filename):
+    content_type, encoding = guess_mime_type(filename)
+    if content_type is None or encoding is not None:
+        content_type = 'application/octet-stream'
+    main_type, sub_type = content_type.split('/', 1)
+    if main_type == 'text':
+        fp = open(filename, 'rb')
+        msg = MIMEText(fp.read().decode(), _subtype=sub_type)
+        fp.close()
+    elif main_type == 'image':
+        fp = open(filename, 'rb')
+        msg = MIMEImage(fp.read(), _subtype=sub_type)
+        fp.close()
+    elif main_type == 'audio':
+        fp = open(filename, 'rb')
+        msg = MIMEAudio(fp.read(), _subtype=sub_type)
+        fp.close()
+    else:
+        fp = open(filename, 'rb')
+        msg = MIMEBase(main_type, sub_type)
+        msg.set_payload(fp.read())
+        fp.close()
+    filename = os.path.basename(filename)
+    msg.add_header('Content-Disposition', 'attachment', filename=filename)
+    message.attach(msg)
+
+def build_message(destination, obj, body, attachments=[]):
+    if not attachments: # no attachments given
+        message = MIMEText(body)
+        message['to'] = destination
+        message['from'] = our_email
+        message['subject'] = obj
+    else:
+        message = MIMEMultipart()
+        message['to'] = destination
+        message['from'] = our_email
+        message['subject'] = obj
+        message.attach(MIMEText(body))
+        for filename in attachments:
+            add_attachment(message, filename)
+    return {'raw': urlsafe_b64encode(message.as_bytes()).decode()}
+
+def send_message(service, destination, obj, body, attachments=[]):
+    return service.users().messages().send(
+      userId="me",
+      body=build_message(destination, obj, body, attachments)
+    ).execute()
+
+#setup mail access -- end
 
 
 
